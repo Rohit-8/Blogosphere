@@ -418,6 +418,33 @@ main.container-fluid {
   color: var(--bs-body-color);
 }
 
+/* Markdown specific tweaks */
+.post-detail-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+.post-detail-content th,
+.post-detail-content td {
+  border: 1px solid var(--card-border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  background: var(--card-bg);
+}
+.post-detail-content thead th {
+  background: linear-gradient(90deg, rgba(99,179,237,0.06), transparent);
+}
+
+.post-detail-content code {
+  word-break: break-word;
+}
+
+.post-detail-content pre code {
+  background: transparent;
+  padding: 0;
+  border: none;
+}
+
 .post-meta-info {
   background-color: var(--sidebar-bg);
   border: 1px solid var(--card-border);

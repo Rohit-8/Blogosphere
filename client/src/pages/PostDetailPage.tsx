@@ -4,6 +4,8 @@ import { Container, Row, Col, Card, Button, Badge, Spinner, Alert } from 'react-
 import { postsService } from '../services/postsService';
 import { authService } from '../services/authService';
 import { BlogPost } from '../types';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const PostDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -189,16 +191,9 @@ const PostDetailPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Post Content */}
+              {/* Post Content (rendered as Markdown) */}
               <div className="post-detail-content">
-                <div 
-                  style={{ 
-                    whiteSpace: 'pre-wrap'
-                  }}
-                  dangerouslySetInnerHTML={{ 
-                    __html: post.content.replace(/\n/g, '<br/>') 
-                  }}
-                />
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{post.content}</ReactMarkdown>
               </div>
 
               {/* Action Buttons */}
