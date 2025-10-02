@@ -1,6 +1,7 @@
 const express = require('express');
 const { getFirestore } = require('../config/firebase');
-const { verifyToken, optionalAuth } = require('../middleware/auth');
+const { authenticateToken, verifyToken, optionalAuth } = require('../middleware/auth');
+const { validatePost } = require('../middleware/validation');
 
 const router = express.Router();
 
@@ -48,8 +49,9 @@ router.get('/', optionalAuth, async (req, res) => {
     const allPosts = [];
     snapshot.forEach(doc => {
       const data = doc.data();
-      // Filter published posts in memory
-      if (data.published) {
+      // Filter published posts in memory - handle both old 'published' field and new 'status' field
+      const isPublished = data.status === 'published' || data.published === true;
+      if (isPublished) {
         allPosts.push({
           id: doc.id,
           ...data,
@@ -89,6 +91,87 @@ router.get('/', optionalAuth, async (req, res) => {
   }
 });
 
+// Get current user's all posts (drafts and published)
+router.get('/my-posts', authenticateToken, async (req, res) => {
+  try {
+    const db = getDB();
+    const postsCollection = getBlogospherePostsCollection(db);
+    
+    // Get user's all posts (both drafts and published)
+    // Remove orderBy to avoid composite index requirement - we'll sort in memory
+    const query = postsCollection
+      .where('authorId', '==', req.user.id);
+    
+    const snapshot = await query.get();
+    
+    const posts = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      posts.push({
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+        updatedAt: data.updatedAt ? data.updatedAt.toDate().toISOString() : new Date().toISOString()
+      });
+    });
+    
+    // Sort posts by createdAt in memory (most recent first)
+    posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+    res.json({
+      success: true,
+      data: { posts }
+    });
+  } catch (error) {
+    console.error('Error fetching user posts:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch posts'
+    });
+  }
+});
+
+// Get current user's draft posts
+router.get('/my-drafts', authenticateToken, async (req, res) => {
+  try {
+    const db = getDB();
+    const postsCollection = getBlogospherePostsCollection(db);
+    
+    // Get user's draft posts
+    // Remove orderBy to avoid composite index requirement - we'll sort in memory
+    const query = postsCollection
+      .where('authorId', '==', req.user.id)
+      .where('status', '==', 'draft');
+    
+    const snapshot = await query.get();
+    
+    const drafts = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      drafts.push({
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+        updatedAt: data.updatedAt ? data.updatedAt.toDate().toISOString() : new Date().toISOString()
+      });
+    });
+    
+    // Sort drafts by createdAt in memory (most recent first)
+    drafts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+    res.json({
+      success: true,
+      data: { posts: drafts }
+    });
+  } catch (error) {
+    console.error('Error fetching user drafts:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch drafts'
+    });
+  }
+});
+
 // Get single post by ID
 router.get('/:postId', optionalAuth, async (req, res) => {
   try {
@@ -110,8 +193,9 @@ router.get('/:postId', optionalAuth, async (req, res) => {
       updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : data.updatedAt
     };
     
-    // Check if post is published or if user is the author
-    if (!post.published && (!req.user || req.user.uid !== post.authorId)) {
+    // Check if post is published or if user is the author - handle both old and new field formats
+    const isPublished = post.status === 'published' || post.published === true;
+    if (!isPublished && (!req.user || req.user.id !== post.authorId)) {
       return res.status(403).json({ error: 'Post not accessible' });
     }
     
@@ -137,11 +221,11 @@ router.get('/:postId', optionalAuth, async (req, res) => {
 });
 
 // Create new post
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', authenticateToken, validatePost, async (req, res) => {
   try {
     const db = getDB();
     const postsCollection = getBlogospherePostsCollection(db);
-    const { title, content, excerpt, tags, category = 'technology', published = false, imageUrl } = req.body;
+    const { title, content, excerpt, tags, category = 'technology', status = 'draft', imageUrl } = req.body;
     
     if (!title || !content) {
       return res.status(400).json({ error: 'Title and content are required' });
@@ -153,6 +237,12 @@ router.post('/', verifyToken, async (req, res) => {
       return res.status(400).json({ error: 'Invalid category' });
     }
     
+    // Validate status
+    const validStatuses = ['draft', 'published'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+    
     const now = new Date();
     const postData = {
       title: title.trim(),
@@ -160,14 +250,18 @@ router.post('/', verifyToken, async (req, res) => {
       excerpt: excerpt ? excerpt.trim() : content.substring(0, 150) + '...',
       tags: Array.isArray(tags) ? tags : [],
       category,
-      published: Boolean(published),
-      authorId: req.user.uid,
-      authorName: req.user.name || req.user.email?.split('@')[0] || 'Anonymous',
+      status,
+      authorId: req.user.id,
+      authorName: req.user.firstName && req.user.lastName 
+        ? `${req.user.firstName} ${req.user.lastName}` 
+        : req.user.username || req.user.email?.split('@')[0] || 'Anonymous',
+      authorEmail: req.user.email,
       createdAt: now,
       updatedAt: now,
       views: 0,
       likes: 0,
-      ...(imageUrl && { imageUrl })
+      ...(imageUrl && { imageUrl }),
+      ...(status === 'published' && { publishedAt: now })
     };
     
     const docRef = await postsCollection.add(postData);
@@ -192,7 +286,7 @@ router.post('/', verifyToken, async (req, res) => {
 });
 
 // Update post
-router.put('/:postId', verifyToken, async (req, res) => {
+router.put('/:postId', authenticateToken, validatePost, async (req, res) => {
   try {
     const db = getDB();
     const postsCollection = getBlogospherePostsCollection(db);
@@ -207,8 +301,8 @@ router.put('/:postId', verifyToken, async (req, res) => {
     
     const post = doc.data();
     
-    // Check if user is the author
-    if (post.authorId !== req.user.uid) {
+    // Check if user is the author or admin
+    if (post.authorId !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Not authorized to update this post' });
     }
     
@@ -220,7 +314,7 @@ router.put('/:postId', verifyToken, async (req, res) => {
     if (content !== undefined) updateData.content = content;
     if (excerpt !== undefined) updateData.excerpt = excerpt.trim();
     if (tags !== undefined) updateData.tags = Array.isArray(tags) ? tags : [];
-    if (published !== undefined) updateData.published = Boolean(published);
+    if (published !== undefined) updateData.status = Boolean(published) ? 'published' : 'draft';
     if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
     
     // Validate and update category
@@ -257,7 +351,7 @@ router.put('/:postId', verifyToken, async (req, res) => {
 });
 
 // Delete post
-router.delete('/:postId', verifyToken, async (req, res) => {
+router.delete('/:postId', authenticateToken, async (req, res) => {
   try {
     const db = getDB();
     const postsCollection = getBlogospherePostsCollection(db);
@@ -271,8 +365,8 @@ router.delete('/:postId', verifyToken, async (req, res) => {
     
     const post = doc.data();
     
-    // Check if user is the author
-    if (post.authorId !== req.user.uid) {
+    // Check if user is the author or admin
+    if (post.authorId !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Not authorized to delete this post' });
     }
     
@@ -305,8 +399,8 @@ router.get('/user/:userId', optionalAuth, async (req, res) => {
       .where('authorId', '==', userId)
       .orderBy('createdAt', 'desc');
     
-    // Only show published posts unless user is viewing their own posts
-    if (!includeUnpublished || !req.user || req.user.uid !== userId) {
+    // Only show published posts unless user is viewing their own posts or is admin
+    if (!includeUnpublished || (!req.user || (req.user.id !== userId && req.user.role !== 'admin'))) {
       query = query.where('published', '==', true);
     }
     
@@ -330,12 +424,12 @@ router.get('/user/:userId', optionalAuth, async (req, res) => {
 });
 
 // Like/Unlike post
-router.post('/:postId/like', verifyToken, async (req, res) => {
+router.post('/:postId/like', authenticateToken, async (req, res) => {
   try {
     const db = getDB();
     const postsCollection = getBlogospherePostsCollection(db);
     const { postId } = req.params;
-    const userId = req.user.uid;
+    const userId = req.user.id;
     
     const postRef = postsCollection.doc(postId);
     const likesRef = db.collection('blogosphere').doc('likes').collection('likes');
@@ -388,6 +482,61 @@ router.post('/:postId/like', verifyToken, async (req, res) => {
     }
     
     res.status(500).json({ error: 'Failed to like/unlike post' });
+  }
+});
+
+// Publish a draft post
+router.put('/:postId/publish', authenticateToken, async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const db = getDB();
+    const postsCollection = getBlogospherePostsCollection(db);
+    
+    // Get the post
+    const postDoc = await postsCollection.doc(postId).get();
+    
+    if (!postDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: 'Post not found'
+      });
+    }
+    
+    const post = postDoc.data();
+    
+    // Verify ownership
+    if (post.authorId !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only publish your own posts'
+      });
+    }
+    
+    // Check if post is a draft
+    if (post.status !== 'draft') {
+      return res.status(400).json({
+        success: false,
+        message: 'Post is not a draft'
+      });
+    }
+    
+    // Update post status to published
+    await postsCollection.doc(postId).update({
+      status: 'published',
+      publishedAt: new Date(),
+      updatedAt: new Date()
+    });
+    
+    res.json({
+      success: true,
+      message: 'Post published successfully'
+    });
+  } catch (error) {
+    console.error('Error publishing post:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to publish post'
+    });
   }
 });
 

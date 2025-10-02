@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { authService } from '../services/authService';
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    username: '',
     email: '',
     password: '',
-    confirmPassword: '',
-    displayName: ''
+    confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,7 +29,7 @@ const RegisterPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const { email, password, confirmPassword, displayName } = formData;
+    const { email, password, confirmPassword, firstName, lastName, username } = formData;
     
     if (!email || !password || !confirmPassword) {
       setError('Please fill in all required fields');
@@ -46,19 +48,28 @@ const RegisterPage: React.FC = () => {
 
     try {
       setError('');
+      setSuccess('');
       setLoading(true);
-      await register(email, password, displayName || undefined);
-      navigate('/', { replace: true });
-    } catch (error: any) {
-      if (error.code === 'auth/email-already-in-use') {
-        setError('An account with this email already exists');
-      } else if (error.code === 'auth/weak-password') {
-        setError('Password is too weak');
-      } else if (error.code === 'auth/invalid-email') {
-        setError('Invalid email address');
+      
+      const result = await authService.register({
+        email,
+        password,
+        firstName,
+        lastName,
+        username
+      });
+
+      if (result.success) {
+        setSuccess('Account created successfully! Please sign in.');
+        // Redirect to login page after 2 seconds
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
       } else {
-        setError('Failed to create account. Please try again.');
+        setError(result.message || 'Failed to create account. Please try again.');
       }
+    } catch (error: any) {
+      setError('Failed to create account. Please try again.');
       console.error('Registration error:', error);
     } finally {
       setLoading(false);
@@ -84,20 +95,65 @@ const RegisterPage: React.FC = () => {
                 </Alert>
               )}
 
+              {success && (
+                <Alert variant="success" className="d-flex align-items-center">
+                  <i className="fas fa-check-circle me-2"></i>
+                  {success}
+                </Alert>
+              )}
+
               <Form onSubmit={handleSubmit}>
+                <Row>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>
+                        <i className="fas fa-user me-2"></i>
+                        First Name
+                      </Form.Label>
+                      <Form.Control
+                        type="text"
+                        name="firstName"
+                        placeholder="Enter your first name"
+                        value={formData.firstName}
+                        onChange={handleChange}
+                        disabled={loading}
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>
+                        <i className="fas fa-user me-2"></i>
+                        Last Name
+                      </Form.Label>
+                      <Form.Control
+                        type="text"
+                        name="lastName"
+                        placeholder="Enter your last name"
+                        value={formData.lastName}
+                        onChange={handleChange}
+                        disabled={loading}
+                      />
+                    </Form.Group>
+                  </Col>
+                </Row>
+
                 <Form.Group className="mb-3">
                   <Form.Label>
-                    <i className="fas fa-user me-2"></i>
-                    Display Name <span className="text-muted">(optional)</span>
+                    <i className="fas fa-at me-2"></i>
+                    Username <span className="text-muted">(optional)</span>
                   </Form.Label>
                   <Form.Control
                     type="text"
-                    name="displayName"
-                    placeholder="Enter your display name"
-                    value={formData.displayName}
+                    name="username"
+                    placeholder="Choose a username"
+                    value={formData.username}
                     onChange={handleChange}
                     disabled={loading}
                   />
+                  <Form.Text className="text-muted">
+                    If not provided, we'll use your email prefix as username.
+                  </Form.Text>
                 </Form.Group>
 
                 <Form.Group className="mb-3">
@@ -131,6 +187,9 @@ const RegisterPage: React.FC = () => {
                     disabled={loading}
                     minLength={6}
                   />
+                  <Form.Text className="text-muted">
+                    At least 6 characters with uppercase, lowercase, and number.
+                  </Form.Text>
                 </Form.Group>
 
                 <Form.Group className="mb-4">

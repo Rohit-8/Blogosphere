@@ -1,53 +1,137 @@
-const { getAuth } = require('../config/firebase');
+const userService = require('../services/userService');
 
-const verifyToken = async (req, res, next) => {
+// Middleware to verify JWT token and authenticate user
+const authenticateToken = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'No token provided' });
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Access token is required'
+      });
     }
 
-    const token = authHeader.split(' ')[1];
+    // Verify token
+    const decoded = userService.verifyToken(token);
     
-    try {
-      const decodedToken = await getAuth().verifyIdToken(token);
-      req.user = decodedToken;
-      next();
-    } catch (error) {
-      console.error('Token verification failed:', error);
-      return res.status(401).json({ error: 'Invalid token' });
+    // Get user from database
+    const user = await userService.getUserById(decoded.userId);
+    
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not found'
+      });
     }
+
+    if (!user.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: 'Account is deactivated'
+      });
+    }
+
+    // Add user to request object
+    req.user = user;
+    next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
-    return res.status(500).json({ error: 'Authentication failed' });
+    return res.status(403).json({
+      success: false,
+      message: 'Invalid or expired token'
+    });
   }
 };
 
+// Optional authentication - adds user to request if token is valid, but doesn't require it
 const optionalAuth = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
-    
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (token) {
+      const decoded = userService.verifyToken(token);
+      const user = await userService.getUserById(decoded.userId);
       
-      try {
-        const decodedToken = await getAuth().verifyIdToken(token);
-        req.user = decodedToken;
-      } catch (error) {
-        // Token is invalid, but we don't return error for optional auth
-        console.log('Optional auth failed:', error.message);
+      if (user && user.isActive) {
+        req.user = user;
       }
     }
     
     next();
   } catch (error) {
-    console.error('Optional auth middleware error:', error);
+    // Continue without authentication if token is invalid
     next();
   }
 };
 
+// Legacy support - map old verifyToken to new authenticateToken
+const verifyToken = authenticateToken;
+
+// Middleware to check if user is admin
+const requireAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authentication required'
+    });
+  }
+
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Admin access required'
+    });
+  }
+
+  next();
+};
+
+// Middleware to check if user owns the resource or is admin
+const requireOwnershipOrAdmin = (resourceUserIdField = 'userId') => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+
+    // Admin can access anything
+    if (req.user.role === 'admin') {
+      return next();
+    }
+
+    // Check ownership based on different scenarios
+    let resourceUserId;
+    
+    if (req.params.id && req.params.id === req.user.id) {
+      // User accessing their own profile
+      return next();
+    }
+    
+    if (req.body && req.body[resourceUserIdField]) {
+      resourceUserId = req.body[resourceUserIdField];
+    } else if (req.params && req.params[resourceUserIdField]) {
+      resourceUserId = req.params[resourceUserIdField];
+    }
+
+    if (resourceUserId && resourceUserId === req.user.id) {
+      return next();
+    }
+
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied - insufficient permissions'
+    });
+  };
+};
+
 module.exports = {
-  verifyToken,
-  optionalAuth
+  authenticateToken,
+  verifyToken, // Legacy support
+  optionalAuth,
+  requireAdmin,
+  requireOwnershipOrAdmin
 };

@@ -44,6 +44,24 @@ export const postsService = {
     return response.data;
   },
 
+  // Get current user's all posts (both drafts and published)
+  getMyPosts: async (): Promise<{ data: { posts: BlogPost[] } }> => {
+    const response = await api.get('/posts/my-posts');
+    return response.data;
+  },
+
+  // Get current user's draft posts
+  getMyDrafts: async (): Promise<{ data: { posts: BlogPost[] } }> => {
+    const response = await api.get('/posts/my-drafts');
+    return response.data;
+  },
+
+  // Publish a draft post
+  publishPost: async (postId: string): Promise<{ success: boolean; message: string }> => {
+    const response = await api.put(`/posts/${postId}/publish`);
+    return response.data;
+  },
+
   // Like/Unlike post
   toggleLike: async (postId: string): Promise<{ liked: boolean; message: string }> => {
     const response = await api.post(`/posts/${postId}/like`);

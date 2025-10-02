@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { authService } from '../services/authService';
 import { postsService } from '../services/postsService';
 import { CATEGORIES } from '../components/Navbar';
 
@@ -12,19 +12,21 @@ const CreatePostPage: React.FC = () => {
     excerpt: '',
     tags: '',
     category: 'technology',
-    imageUrl: '',
-    published: false
+    imageUrl: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [user, setUser] = useState<any>(null);
 
-  const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect if not authenticated
-  React.useEffect(() => {
-    if (!user) {
+  // Check authentication and redirect if not authenticated
+  useEffect(() => {
+    const currentUser = authService.getUser();
+    if (!currentUser) {
       navigate('/login');
+    } else {
+      setUser(currentUser);
     }
   }, [user, navigate]);
 
@@ -38,7 +40,7 @@ const CreatePostPage: React.FC = () => {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, status: 'draft' | 'published' = 'published') => {
     e.preventDefault();
     
     if (!formData.title.trim() || !formData.content.trim()) {
@@ -59,11 +61,16 @@ const CreatePostPage: React.FC = () => {
           : [],
         category: formData.category,
         imageUrl: formData.imageUrl.trim() || undefined,
-        published: formData.published
+        status
       };
       
       const newPost = await postsService.createPost(postData);
-      navigate(`/post/${newPost.id}`);
+      
+      if (status === 'published') {
+        navigate(`/post/${newPost.id}`);
+      } else {
+        navigate('/my-drafts');
+      }
     } catch (error: any) {
       setError('Failed to create post. Please try again.');
       console.error('Create post error:', error);
@@ -211,26 +218,6 @@ const CreatePostPage: React.FC = () => {
                   />
                 </Form.Group>
 
-                <Form.Group className="mb-4">
-                  <Form.Check
-                    type="checkbox"
-                    name="published"
-                    label={
-                      <span>
-                        <i className="fas fa-globe me-2"></i>
-                        <strong>Publish immediately</strong>
-                        <br />
-                        <small className="text-muted">
-                          Uncheck to save as draft (you can publish later)
-                        </small>
-                      </span>
-                    }
-                    checked={formData.published}
-                    onChange={handleChange}
-                    disabled={loading}
-                  />
-                </Form.Group>
-
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
                   <Button
                     variant="outline-secondary"
@@ -243,19 +230,39 @@ const CreatePostPage: React.FC = () => {
                   </Button>
                   
                   <Button
-                    type="submit"
-                    className="btn-gradient"
+                    variant="outline-primary"
+                    onClick={(e) => handleSubmit(e, 'draft')}
                     disabled={loading}
+                    className="me-md-2"
                   >
                     {loading ? (
                       <>
                         <Spinner animation="border" size="sm" className="me-2" />
-                        {formData.published ? 'Publishing...' : 'Saving Draft...'}
+                        Saving...
                       </>
                     ) : (
                       <>
-                        <i className={`fas ${formData.published ? 'fa-paper-plane' : 'fa-save'} me-2`}></i>
-                        {formData.published ? 'Publish Post' : 'Save as Draft'}
+                        <i className="fas fa-save me-2"></i>
+                        Save as Draft
+                      </>
+                    )}
+                  </Button>
+                  
+                  <Button
+                    variant="primary"
+                    onClick={(e) => handleSubmit(e, 'published')}
+                    disabled={loading}
+                    className="btn-gradient"
+                  >
+                    {loading ? (
+                      <>
+                        <Spinner animation="border" size="sm" className="me-2" />
+                        Publishing...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-paper-plane me-2"></i>
+                        Publish Post
                       </>
                     )}
                   </Button>

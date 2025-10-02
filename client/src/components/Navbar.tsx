@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar as BSNavbar, Nav, Container, Button, NavDropdown } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { authService } from '../services/authService';
 import { useTheme } from '../context/ThemeContext';
 
 export const CATEGORIES = [
@@ -13,14 +13,36 @@ export const CATEGORIES = [
 ];
 
 const Navbar: React.FC = () => {
-  const { user, logout } = useAuth();
+  const [user, setUser] = useState<any>(null);
   const { isDarkMode, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
+  // Check authentication status on component mount
+  useEffect(() => {
+    const checkAuth = () => {
+      const currentUser = authService.getUser();
+      setUser(currentUser);
+    };
+    
+    checkAuth();
+    
+    // Listen for storage changes (when user logs in/out in another tab)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'blogosphere_user' || e.key === 'blogosphere_token') {
+        checkAuth();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  const handleLogout = () => {
     try {
-      await logout();
+      authService.logout();
+      setUser(null);
       navigate('/');
+      window.location.reload(); // Refresh to update app state
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -110,7 +132,7 @@ const Navbar: React.FC = () => {
                   title={
                     <span>
                       <i className="fas fa-user me-1"></i>
-                      {user.displayName || 'Profile'}
+                      {user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.username || user.email?.split('@')[0] || 'Profile'}
                     </span>
                   } 
                   id="user-dropdown"

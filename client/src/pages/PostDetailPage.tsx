@@ -2,17 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Badge, Spinner, Alert } from 'react-bootstrap';
 import { postsService } from '../services/postsService';
-import { useAuth } from '../context/AuthContext';
+import { authService } from '../services/authService';
 import { BlogPost } from '../types';
 
 const PostDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const [user, setUser] = useState<any>(null);
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [liking, setLiking] = useState(false);
+
+  // Check authentication status
+  useEffect(() => {
+    const currentUser = authService.getUser();
+    setUser(currentUser);
+  }, []);
 
   useEffect(() => {
     if (!id) {
@@ -65,7 +71,7 @@ const PostDetailPage: React.FC = () => {
     });
   };
 
-  const isAuthor = user && post && user.uid === post.authorId;
+  const isAuthor = user && post && user.id === post.authorId;
 
   if (loading) {
     return (

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { authService } from '../services/authService';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -9,7 +9,6 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -26,8 +25,16 @@ const LoginPage: React.FC = () => {
     try {
       setError('');
       setLoading(true);
-      await login(email, password);
-      navigate(from, { replace: true });
+      
+      const result = await authService.login(email, password);
+      
+      if (result.success) {
+        navigate(from, { replace: true });
+        // Refresh the page to update navigation state
+        window.location.reload();
+      } else {
+        setError(result.message || 'Failed to sign in. Please check your credentials.');
+      }
     } catch (error: any) {
       setError('Failed to sign in. Please check your credentials.');
       console.error('Login error:', error);

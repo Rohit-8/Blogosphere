@@ -15,7 +15,8 @@ export interface BlogPost {
   excerpt: string;
   tags: string[];
   category: string;
-  published: boolean;
+  status: 'draft' | 'published';
+  published?: boolean; // Legacy field for backward compatibility
   authorId: string;
   authorName: string;
   createdAt: Date | string;
@@ -31,7 +32,7 @@ export interface CreatePostData {
   excerpt?: string;
   tags: string[];
   category: string;
-  published: boolean;
+  status: 'draft' | 'published';
   imageUrl?: string;
 }
 
@@ -50,11 +51,3 @@ export interface PostsResponse {
   pagination: PaginationInfo;
 }
 
-export interface AuthContextType {
-  user: User | null;
-  loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, displayName?: string) => Promise<void>;
-  logout: () => Promise<void>;
-  updateProfile: (displayName: string, photoURL?: string) => Promise<void>;
-}
