@@ -6,6 +6,7 @@ import { authService } from '../services/authService';
 import { BlogPost } from '../types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import AISummarizer from '../components/AISummarizer';
 
 const PostDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +16,7 @@ const PostDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [liking, setLiking] = useState(false);
+  const [showSummarizer, setShowSummarizer] = useState(false);
 
   // Check authentication status
   useEffect(() => {
@@ -71,6 +73,14 @@ const PostDetailPage: React.FC = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const handleSummarizeClick = () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    setShowSummarizer(true);
   };
 
   const isAuthor = user && post && user.id === post.authorId;
@@ -197,37 +207,55 @@ const PostDetailPage: React.FC = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="post-actions d-flex justify-content-between align-items-center">
-                <div>
+              <div className="post-actions d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div className="d-flex flex-wrap gap-2">
                   {user && (
-                    <Button
-                      variant={post.likes > 0 ? "danger" : "outline-danger"}
-                      size="sm"
-                      onClick={handleLike}
-                      disabled={liking}
-                      className="me-2"
-                    >
-                      {liking ? (
-                        <Spinner as="span" animation="border" size="sm" />
-                      ) : (
-                        <>
-                          <i className="bi bi-heart me-1"></i>
-                          {post.likes > 0 ? `Liked (${post.likes})` : 'Like'}
-                        </>
-                      )}
-                    </Button>
+                    <>
+                      <Button
+                        variant={post.likes > 0 ? "danger" : "outline-danger"}
+                        size="sm"
+                        onClick={handleLike}
+                        disabled={liking}
+                      >
+                        {liking ? (
+                          <Spinner as="span" animation="border" size="sm" />
+                        ) : (
+                          <>
+                            <i className="bi bi-heart me-1"></i>
+                            {post.likes > 0 ? `Liked (${post.likes})` : 'Like'}
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        onClick={handleSummarizeClick}
+                      >
+                        <i className="fas fa-compress-alt me-1"></i>
+                        Summarize with AI
+                      </Button>
+                    </>
                   )}
                   
                   {!user && (
-                    <Button
-                      variant="outline-secondary"
-                      size="sm"
-                      onClick={() => navigate('/login')}
-                      className="me-2"
-                    >
-                      <i className="bi bi-heart me-1"></i>
-                      Login to Like
-                    </Button>
+                    <>
+                      <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        onClick={() => navigate('/login')}
+                      >
+                        <i className="bi bi-heart me-1"></i>
+                        Login to Like
+                      </Button>
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        onClick={handleSummarizeClick}
+                      >
+                        <i className="fas fa-compress-alt me-1"></i>
+                        Summarize with AI
+                      </Button>
+                    </>
                   )}
                 </div>
 
@@ -342,6 +370,16 @@ const PostDetailPage: React.FC = () => {
           </div>
         </Col>
       </Row>
+
+      {/* AI Summarizer Modal */}
+      {post && (
+        <AISummarizer
+          show={showSummarizer}
+          onHide={() => setShowSummarizer(false)}
+          content={post.content}
+          postTitle={post.title}
+        />
+      )}
     </Container>
   );
 };

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { postsService } from '../services/postsService';
 import { CATEGORIES } from '../components/Navbar';
+import AIContentGenerator from '../components/AIContentGenerator';
 
 const CreatePostPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -17,6 +18,7 @@ const CreatePostPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [user, setUser] = useState<any>(null);
+  const [showAIGenerator, setShowAIGenerator] = useState(false);
 
   const navigate = useNavigate();
 
@@ -77,6 +79,21 @@ const CreatePostPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAIGenerateClick = () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    setShowAIGenerator(true);
+  };
+
+  const handleContentGenerated = (content: string) => {
+    setFormData(prev => ({
+      ...prev,
+      content: content
+    }));
   };
 
   if (!user) {
@@ -167,15 +184,27 @@ const CreatePostPage: React.FC = () => {
                 </Row>
 
                 <Form.Group className="mb-4">
-                  <Form.Label className="fw-bold">
-                    <i className="fas fa-align-left me-2"></i>
-                    Content *
-                  </Form.Label>
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <Form.Label className="fw-bold mb-0">
+                      <i className="fas fa-align-left me-2"></i>
+                      Content *
+                    </Form.Label>
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      onClick={handleAIGenerateClick}
+                      disabled={loading}
+                      className="d-flex align-items-center"
+                    >
+                      <i className="fas fa-magic me-2"></i>
+                      Generate with AI
+                    </Button>
+                  </div>
                   <Form.Control
                     as="textarea"
                     rows={12}
                     name="content"
-                    placeholder="Write your post content here... You can use Markdown formatting!"
+                    placeholder="Write your post content here... You can use Markdown formatting! Or click 'Generate with AI' to let AI help you."
                     value={formData.content}
                     onChange={handleChange}
                     required
@@ -270,6 +299,13 @@ const CreatePostPage: React.FC = () => {
               </Form>
             </Card.Body>
           </Card>
+
+          {/* AI Content Generator Modal */}
+          <AIContentGenerator
+            show={showAIGenerator}
+            onHide={() => setShowAIGenerator(false)}
+            onContentGenerated={handleContentGenerated}
+          />
         </Col>
       </Row>
     </Container>

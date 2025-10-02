@@ -8,6 +8,7 @@ require('dotenv').config();
 const { initializeFirebase } = require('./config/firebase');
 const postsRoutes = require('./routes/posts');
 const usersRoutes = require('./routes/users');
+const aiRoutes = require('./routes/ai');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -36,6 +37,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/posts', postsRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
