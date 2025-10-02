@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '../services/authService';
 
 const RegisterPage: React.FC = () => {
@@ -17,6 +17,16 @@ const RegisterPage: React.FC = () => {
   const [success, setSuccess] = useState('');
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as any)?.from?.pathname || '/';
+
+  // Redirect away if already authenticated
+  React.useEffect(() => {
+    if (authService.isAuthenticated()) {
+      navigate(from, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -63,7 +73,8 @@ const RegisterPage: React.FC = () => {
         setSuccess('Account created successfully! Please sign in.');
         // Redirect to login page after 2 seconds
         setTimeout(() => {
-          navigate('/login');
+          // Navigate to login but preserve the original destination so user can continue to create post
+          navigate('/login', { state: { from: { pathname: from } } });
         }, 2000);
       } else {
         setError(result.message || 'Failed to create account. Please try again.');

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Spinner, Badge, Nav } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
+import { authService } from '../services/authService';
 import { postsService } from '../services/postsService';
 import { BlogPost } from '../types';
 import { CATEGORIES } from '../components/Navbar';
@@ -106,7 +107,15 @@ const HomePage: React.FC = () => {
                   <Button 
                     size="lg" 
                     className="btn-hero-primary me-3"
-                    onClick={() => navigate('/register')}
+                    onClick={() => {
+                      if (authService.isAuthenticated()) {
+                        // If user is logged in, go to create post page
+                        navigate('/create');
+                      } else {
+                        // If not logged in, send them to register and preserve intended destination
+                        navigate('/register', { state: { from: { pathname: '/create' } } });
+                      }
+                    }}
                   >
                     <i className="fas fa-rocket me-2"></i>
                     Start Writing

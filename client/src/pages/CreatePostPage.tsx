@@ -109,7 +109,7 @@ const CreatePostPage: React.FC = () => {
               <Form onSubmit={handleSubmit}>
                 <Form.Group className="mb-4">
                   <Form.Label className="fw-bold">
-                    <i className="fas fa-heading me-2"></i>
+                    {/* <i className="fas fa-heading me-2"></i> */}
                     Post Title *
                   </Form.Label>
                   <Form.Control

@@ -14,6 +14,14 @@ const LoginPage: React.FC = () => {
 
   const from = (location.state as any)?.from?.pathname || '/';
 
+  // If already authenticated, redirect to intended destination or home
+  React.useEffect(() => {
+    if (authService.isAuthenticated()) {
+      navigate(from, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
