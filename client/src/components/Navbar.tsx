@@ -29,11 +29,6 @@ const Navbar: React.FC = () => {
         <BSNavbar.Toggle aria-controls="basic-navbar-nav" />
         <BSNavbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
-            <Nav.Link as={Link} to="/">
-              <i className="fas fa-home me-1"></i>
-              Home
-            </Nav.Link>
-            
             {user && (
               <Nav.Link as={Link} to="/create">
                 <i className="fas fa-plus me-1"></i>
@@ -43,6 +38,10 @@ const Navbar: React.FC = () => {
           </Nav>
           
           <Nav className="ms-auto d-flex align-items-center">
+            <Nav.Link as={Link} to="/" className="me-3">
+              <i className="fas fa-home me-1"></i>
+              Home
+            </Nav.Link>
             {/* Theme Toggle Button */}
             <Button
               variant="outline-secondary"

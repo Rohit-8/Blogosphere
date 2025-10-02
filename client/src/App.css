@@ -248,11 +248,39 @@ body.dark-theme {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* ===== MAIN CONTENT SPACING FOR STICKY NAVBAR ===== */
+main.container-fluid {
+  min-height: calc(100vh - 76px);
+}
+
+/* ===== STICKY NAVBAR ENHANCEMENTS ===== */
+.navbar.shadow-sm {
+  box-shadow: 0 2px 12px var(--shadow-color) !important;
+}
+
+/* ===== NAVBAR ITEM SPACING ===== */
+.navbar-nav .nav-link {
+  padding: 0.5rem 0.75rem !important;
+  border-radius: 0.375rem;
+  margin: 0 0.25rem;
+  transition: all 0.3s ease;
+}
+
+.navbar-nav .nav-link:hover {
+  background-color: var(--sidebar-bg) !important;
+  transform: translateY(-1px);
+}
+
 /* ===== NAVBAR THEME ===== */
 .navbar {
   background-color: var(--navbar-bg) !important;
   border-bottom: 1px solid var(--card-border);
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1030 !important;
   transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .navbar-brand {
@@ -648,10 +676,19 @@ a:hover {
   
   .hero-section {
     padding: 2rem 0;
+    margin-top: 0;
   }
   
   .hero-section h1 {
     font-size: 2.5rem !important;
+  }
+  
+  main.container-fluid {
+    min-height: calc(100vh - 66px);
+  }
+  
+  .navbar-nav .nav-link {
+    margin: 0.25rem 0;
   }
 }
 
