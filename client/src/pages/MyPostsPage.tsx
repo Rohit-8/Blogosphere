@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Badge, Spinner, Alert, Nav } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
-import { authService } from '../services/authService';
 import { postsService } from '../services/postsService';
 import { BlogPost } from '../types';
 

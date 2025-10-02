@@ -20,7 +20,7 @@ const EditPostPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [user, setUser] = useState<any>(null);
+  // user state removed - authentication check is done in effect
 
   useEffect(() => {
     const currentUser = authService.getUser();
@@ -28,7 +28,7 @@ const EditPostPage: React.FC = () => {
       navigate('/login');
       return;
     }
-    setUser(currentUser);
+    // authenticated - continue
 
     const loadPost = async () => {
       if (!id) {

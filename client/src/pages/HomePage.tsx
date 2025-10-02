@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Spinner, Badge, Nav } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
+import { Container, Row, Col, Card, Button, Spinner, Badge } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { postsService } from '../services/postsService';
 import { BlogPost } from '../types';
@@ -8,6 +8,7 @@ import { CATEGORIES } from '../components/Navbar';
 
 const HomePage: React.FC = () => {
   const [allPosts, setAllPosts] = useState<BlogPost[]>([]);
+  // displayPosts not used directly; we rely on allPosts and slice when rendering
   const [displayPosts, setDisplayPosts] = useState<BlogPost[]>([]);
   const [featuredPosts, setFeaturedPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +36,7 @@ const HomePage: React.FC = () => {
     fetchPosts();
   }, []);
 
+  // category filtering may be reintroduced later; keep handler to avoid UI break
   const handleCategoryChange = (categoryId: string) => {
     setSelectedCategory(categoryId);
     if (categoryId === 'all') {
