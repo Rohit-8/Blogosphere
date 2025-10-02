@@ -1403,18 +1403,27 @@ a:hover {
   position: sticky;
   top: 64px;
   padding: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .sidebar-toggle-btn {
   width: 100%;
   border-radius: 0.4rem;
-  padding: 0.35rem;
+  padding: 0; /* remove extra vertical padding to match item height */
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
   font-size: 0.85rem;
+  height: 44px; /* fixed height to match category items */
+}
+
+/* Ensure the icon inside toggle is centered and same scale */
+.sidebar-toggle-btn i {
+  font-size: 1rem;
 }
 
 .sidebar-toggle-btn:hover {
@@ -1431,8 +1440,8 @@ a:hover {
 .sidebar-category-item {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 0.6rem;
+  gap: 0.5rem;
+  padding: 0 0.75rem;
   border-radius: 0.4rem;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -1440,6 +1449,15 @@ a:hover {
   border: 1px solid var(--card-border);
   position: relative;
   overflow: hidden;
+  height: 44px;
+}
+
+/* Ensure icon and text are vertically centered */
+.sidebar-category-item .category-icon,
+.sidebar-toggle-btn,
+.sidebar-category-item .category-details {
+  display: flex;
+  align-items: center;
 }
 
 .sidebar-category-item::before {
@@ -1488,11 +1506,21 @@ a:hover {
 .category-icon {
   font-size: 1.2rem;
   color: var(--bs-primary);
-  min-width: 30px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  margin-top: 15px;
   transition: all 0.3s ease;
+}
+
+/* Ensure the inner icon has no offset */
+.sidebar-category-item .category-icon i {
+  display: block;
+  line-height: 0;
+  font-size: 1.2rem;
 }
 
 .sidebar-category-item:hover .category-icon {
@@ -1507,11 +1535,28 @@ a:hover {
   white-space: nowrap;
 }
 
+/* Make sure the name and count align vertically within the 44px item */
+.category-details .category-name,
+.category-details .category-count {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+}
+
+.category-details .category-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--bs-body-color);
+  line-height: 1.2rem;
+  display: block;
+}
+
 .category-name {
   font-weight: 600;
   font-size: 0.85rem;
   color: var(--bs-body-color);
   transition: color 0.3s ease;
+  line-height: 1.2rem;
 }
 
 .category-count {
