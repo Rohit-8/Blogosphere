@@ -3,6 +3,7 @@ import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-b
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { postsService } from '../services/postsService';
+import { CATEGORIES } from '../components/Navbar';
 
 const CreatePostPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -10,6 +11,8 @@ const CreatePostPage: React.FC = () => {
     content: '',
     excerpt: '',
     tags: '',
+    category: 'technology',
+    imageUrl: '',
     published: false
   });
   const [loading, setLoading] = useState(false);
@@ -25,7 +28,7 @@ const CreatePostPage: React.FC = () => {
     }
   }, [user, navigate]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
     
@@ -54,6 +57,8 @@ const CreatePostPage: React.FC = () => {
         tags: formData.tags
           ? formData.tags.split(',').map(tag => tag.trim()).filter(Boolean)
           : [],
+        category: formData.category,
+        imageUrl: formData.imageUrl.trim() || undefined,
         published: formData.published
       };
       
@@ -111,6 +116,48 @@ const CreatePostPage: React.FC = () => {
                     size="lg"
                   />
                 </Form.Group>
+
+                <Row>
+                  <Col md={6}>
+                    <Form.Group className="mb-4">
+                      <Form.Label className="fw-bold">
+                        <i className="fas fa-list me-2"></i>
+                        Category *
+                      </Form.Label>
+                      <Form.Select
+                        name="category"
+                        value={formData.category}
+                        onChange={handleChange}
+                        required
+                        disabled={loading}
+                        size="lg"
+                      >
+                        {CATEGORIES.map(category => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group className="mb-4">
+                      <Form.Label className="fw-bold">
+                        <i className="fas fa-image me-2"></i>
+                        Featured Image URL <span className="text-muted fw-normal">(optional)</span>
+                      </Form.Label>
+                      <Form.Control
+                        type="url"
+                        name="imageUrl"
+                        placeholder="https://example.com/image.jpg"
+                        value={formData.imageUrl}
+                        onChange={handleChange}
+                        disabled={loading}
+                        size="lg"
+                      />
+                    </Form.Group>
+                  </Col>
+                </Row>
 
                 <Form.Group className="mb-4">
                   <Form.Label className="fw-bold">

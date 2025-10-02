@@ -14,6 +14,7 @@ export interface BlogPost {
   content: string;
   excerpt: string;
   tags: string[];
+  category: string;
   published: boolean;
   authorId: string;
   authorName: string;
@@ -21,6 +22,7 @@ export interface BlogPost {
   updatedAt: Date | string;
   views: number;
   likes: number;
+  imageUrl?: string;
 }
 
 export interface CreatePostData {
@@ -28,7 +30,9 @@ export interface CreatePostData {
   content: string;
   excerpt?: string;
   tags: string[];
+  category: string;
   published: boolean;
+  imageUrl?: string;
 }
 
 export interface UpdatePostData extends Partial<CreatePostData> {}

@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Spinner, Badge, Nav } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
+import { Container, Row, Col, Card, Badge, Spinner, Nav } from 'react-bootstrap';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { postsService } from '../services/postsService';
-import { BlogPost } from '../types';
 import { CATEGORIES } from '../components/Navbar';
+import { BlogPost } from '../types';
 
-const HomePage: React.FC = () => {
+const ExplorePage: React.FC = () => {
   const [allPosts, setAllPosts] = useState<BlogPost[]>([]);
   const [displayPosts, setDisplayPosts] = useState<BlogPost[]>([]);
-  const [featuredPosts, setFeaturedPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedCategory = searchParams.get('category') || 'all';
   const navigate = useNavigate();
 
   const fetchPosts = async () => {
@@ -20,8 +20,6 @@ const HomePage: React.FC = () => {
       const response = await postsService.getPosts({ limit: 50 });
       setAllPosts(response.posts);
       setDisplayPosts(response.posts);
-      // Set featured posts as the most recent ones
-      setFeaturedPosts(response.posts.slice(0, 3));
     } catch (err) {
       setError('Failed to fetch posts. Please try again later.');
       console.error('Error fetching posts:', err);
@@ -35,14 +33,23 @@ const HomePage: React.FC = () => {
   }, []);
 
   const handleCategoryChange = (categoryId: string) => {
-    setSelectedCategory(categoryId);
+    // Update URL parameters
     if (categoryId === 'all') {
-      setDisplayPosts(allPosts);
+      setSearchParams({});
     } else {
-      const filtered = allPosts.filter(post => post.category === categoryId);
-      setDisplayPosts(filtered);
+      setSearchParams({ category: categoryId });
     }
   };
+
+  // Filter posts based on URL parameter
+  useEffect(() => {
+    if (selectedCategory === 'all') {
+      setDisplayPosts(allPosts);
+    } else {
+      const filtered = allPosts.filter(post => post.category === selectedCategory);
+      setDisplayPosts(filtered);
+    }
+  }, [allPosts, selectedCategory]);
 
   const formatDate = (date: string | Date) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -74,79 +81,74 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <div className="homepage-modern">
-      {/* Enhanced Hero Section */}
-      <div className="hero-section-modern">
+    <div className="explore-page">
+      {/* Categories Section - starts immediately without hero */}
+      <div className="categories-section" style={{ paddingTop: '1.5rem', paddingBottom: '1rem' }}>
         <Container>
-          <Row className="align-items-center min-vh-60">
-            <Col lg={6}>
-              <div className="hero-content">
-                <h1 className="hero-title">
-                  Welcome to <span className="text-gradient">Blogosphere</span>
-                </h1>
-                <p className="hero-subtitle">
-                  Discover insights across technology, business, AI, and market trends. 
-                  Join our community of thought leaders and content creators.
+          <div className="text-center mb-4">
+            {selectedCategory === 'all' ? (
+              <>
+                <h1 className="h2 fw-bold mb-3">Explore All Posts</h1>
+                <p className="mb-3" style={{ fontSize: '1.1rem' }}>
+                  Discover amazing content across all categories. Filter by your interests and dive deep into topics you love.
                 </p>
-                <div className="hero-stats">
-                  <div className="stat-item">
-                    <h3>{allPosts.length}+</h3>
-                    <p>Articles</p>
-                  </div>
-                  <div className="stat-item">
-                    <h3>{CATEGORIES.length}</h3>
-                    <p>Categories</p>
-                  </div>
-                  <div className="stat-item">
-                    <h3>10K+</h3>
-                    <p>Readers</p>
-                  </div>
-                </div>
-                <div className="hero-actions">
-                  <Button 
-                    size="lg" 
-                    className="btn-hero-primary me-3"
-                    onClick={() => navigate('/register')}
+              </>
+            ) : (
+              <>
+                {(() => {
+                  const category = CATEGORIES.find(cat => cat.id === selectedCategory);
+                  return category ? (
+                    <>
+                      <div className="category-icon-inline mb-2" style={{ fontSize: '2rem', color: 'var(--bs-primary)' }}>
+                        <i className={category.icon}></i>
+                      </div>
+                      <h1 className="h2 fw-bold mb-3">{category.name}</h1>
+                      <p className="mb-3" style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>
+                        Discover the latest insights and trends in {category.name.toLowerCase()}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <h1 className="h2 fw-bold mb-3">Category Not Found</h1>
+                      <p className="mb-3">The selected category could not be found.</p>
+                    </>
+                  );
+                })()}
+              </>
+            )}
+          </div>
+          
+          {/* Category Navigation */}
+          <Nav className="category-nav justify-content-center mb-4">
+            <Nav.Item>
+              <Nav.Link 
+                className={selectedCategory === 'all' ? 'active' : ''}
+                onClick={() => handleCategoryChange('all')}
+              >
+                <i className="fas fa-th-large me-2"></i>
+                All Posts ({allPosts.length})
+              </Nav.Link>
+            </Nav.Item>
+            {CATEGORIES.map(category => {
+              const count = allPosts.filter(post => post.category === category.id).length;
+              return (
+                <Nav.Item key={category.id}>
+                  <Nav.Link 
+                    className={selectedCategory === category.id ? 'active' : ''}
+                    onClick={() => handleCategoryChange(category.id)}
                   >
-                    <i className="fas fa-rocket me-2"></i>
-                    Start Writing
-                  </Button>
-                  <Button 
-                    variant="outline-light" 
-                    size="lg"
-                    className="btn-hero-secondary"
-                    onClick={() => navigate('/explore')}
-                  >
-                    Explore Posts
-                  </Button>
-                </div>
-              </div>
-            </Col>
-            <Col lg={6}>
-              <div className="hero-visual">
-                <div className="floating-cards">
-                  {featuredPosts.slice(0, 3).map((post, index) => (
-                    <Card key={post.id} className={`floating-card card-${index + 1}`}>
-                      <Card.Body>
-                        <Badge bg="primary" className="mb-2">
-                          {CATEGORIES.find(cat => cat.id === post.category)?.name || 'General'}
-                        </Badge>
-                        <Card.Title className="h6">{post.title.substring(0, 40)}...</Card.Title>
-                        <small className="text-muted">{post.authorName}</small>
-                      </Card.Body>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            </Col>
-          </Row>
+                    <i className={`${category.icon} me-2`}></i>
+                    {category.name} ({count})
+                  </Nav.Link>
+                </Nav.Item>
+              );
+            })}
+          </Nav>
         </Container>
       </div>
 
-
-
       {/* Posts Grid */}
-      <Container className="posts-section">
+      <Container className="posts-section pb-4">
         {error && (
           <div className="alert alert-danger mb-4" role="alert">
             <i className="fas fa-exclamation-triangle me-2"></i>
@@ -154,27 +156,15 @@ const HomePage: React.FC = () => {
           </div>
         )}
 
-        <div className="text-center mb-5">
-          <h2 className="section-title">Latest Posts</h2>
-          <p className="section-subtitle">Discover the most recent content from our community</p>
-        </div>
-
-        {allPosts.length === 0 && !loading && !error ? (
+        {displayPosts.length === 0 && !loading && !error ? (
           <div className="text-center py-5">
             <i className="fas fa-blog fa-4x text-muted mb-4"></i>
             <h3>No posts in this category yet</h3>
             <p className="text-muted mb-4">Be the first to share your insights!</p>
-            <Button 
-              className="btn-gradient"
-              onClick={() => navigate('/register')}
-            >
-              <i className="fas fa-plus me-2"></i>
-              Create First Post
-            </Button>
           </div>
         ) : (
           <Row className="g-4">
-            {allPosts.slice(0, 6).map((post) => (
+            {displayPosts.map((post) => (
               <Col key={post.id} lg={4} md={6}>
                 <Card className="modern-post-card h-100 clickable-card" onClick={() => navigate(`/post/${post.id}`)}>
                   <div className="post-image-wrapper">
@@ -233,10 +223,8 @@ const HomePage: React.FC = () => {
                           </span>
                         </div>
                         
-                        <Button 
-                          variant="primary" 
-                          size="sm"
-                          className="read-more-btn"
+                        <button 
+                          className="btn btn-primary btn-sm read-more-btn"
                           onClick={(e) => {
                             e.stopPropagation();
                             navigate(`/post/${post.id}`);
@@ -244,7 +232,7 @@ const HomePage: React.FC = () => {
                         >
                           Read More
                           <i className="fas fa-arrow-right ms-1"></i>
-                        </Button>
+                        </button>
                       </div>
                     </div>
                   </Card.Body>
@@ -258,4 +246,4 @@ const HomePage: React.FC = () => {
   );
 };
 
-export default HomePage;
+export default ExplorePage;

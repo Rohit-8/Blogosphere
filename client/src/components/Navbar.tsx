@@ -1,8 +1,16 @@
 import React from 'react';
-import { Navbar as BSNavbar, Nav, Container, Button } from 'react-bootstrap';
+import { Navbar as BSNavbar, Nav, Container, Button, NavDropdown } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+
+export const CATEGORIES = [
+  { id: 'daily-news', name: 'Daily News', icon: 'fas fa-newspaper' },
+  { id: 'stock-market', name: 'Stock Market', icon: 'fas fa-chart-line' },
+  { id: 'ai', name: 'AI & ML', icon: 'fas fa-robot' },
+  { id: 'technology', name: 'Technology', icon: 'fas fa-microchip' },
+  { id: 'business', name: 'Business', icon: 'fas fa-briefcase' }
+];
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -19,35 +27,74 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <BSNavbar expand="lg" className="shadow-sm navbar">
-      <Container>
-        <BSNavbar.Brand as={Link} to="/" className="fw-bold text-primary">
-          <i className="fas fa-blog me-2"></i>
-          Blogosphere
+    <BSNavbar expand="lg" className="shadow-sm navbar-modern">
+      <Container fluid className="px-4">
+        {/* Logo Section */}
+        <BSNavbar.Brand as={Link} to="/" className="brand-logo">
+          <div className="logo-container">
+            <i className="fas fa-blog logo-icon"></i>
+            <span className="brand-text">Blogosphere</span>
+          </div>
         </BSNavbar.Brand>
         
-        <BSNavbar.Toggle aria-controls="basic-navbar-nav" />
-        <BSNavbar.Collapse id="basic-navbar-nav">
+        <BSNavbar.Toggle aria-controls="navbar-nav" className="ms-auto" />
+        
+        <BSNavbar.Collapse id="navbar-nav">
+          {/* Left side - empty for spacing */}
           <Nav className="me-auto">
             {user && (
-              <Nav.Link as={Link} to="/create">
+              <Nav.Link as={Link} to="/create" className="nav-item-modern">
                 <i className="fas fa-plus me-1"></i>
                 Write
               </Nav.Link>
             )}
           </Nav>
-          
-          <Nav className="ms-auto d-flex align-items-center">
-            <Nav.Link as={Link} to="/" className="me-3">
+
+          {/* Right side - Home, Categories, Theme, Auth */}
+          <Nav className="navbar-right ms-auto">
+            <Nav.Link as={Link} to="/" className="nav-item-modern">
               <i className="fas fa-home me-1"></i>
               Home
             </Nav.Link>
-            {/* Theme Toggle Button */}
+            
+            <NavDropdown 
+              title={
+                <span>
+                  <i className="fas fa-list me-1"></i>
+                  Categories
+                </span>
+              } 
+              id="categories-dropdown"
+              className="nav-item-modern"
+            >
+              <NavDropdown.Item 
+                as={Link} 
+                to="/explore"
+                className="category-item"
+              >
+                <i className="fas fa-th-large me-2"></i>
+                All Categories
+              </NavDropdown.Item>
+              <NavDropdown.Divider />
+              {CATEGORIES.map(category => (
+                <NavDropdown.Item 
+                  key={category.id}
+                  as={Link} 
+                  to={`/explore?category=${category.id}`}
+                  className="category-item"
+                >
+                  <i className={`${category.icon} me-2`}></i>
+                  {category.name}
+                </NavDropdown.Item>
+              ))}
+            </NavDropdown>
+            
+            {/* Theme Toggle */}
             <Button
               variant="outline-secondary"
               size="sm"
               onClick={toggleTheme}
-              className="theme-toggle me-2"
+              className="theme-toggle-modern me-2"
               title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             >
               {isDarkMode ? (
@@ -55,43 +102,53 @@ const Navbar: React.FC = () => {
               ) : (
                 <i className="fas fa-moon"></i>
               )}
-              <span className="d-none d-md-inline ms-1">
-                {isDarkMode ? 'Light' : 'Dark'}
-              </span>
             </Button>
 
             {user ? (
               <>
-                <Nav.Link as={Link} to="/profile">
-                  <i className="fas fa-user me-1"></i>
-                  {user.displayName || 'Profile'}
-                </Nav.Link>
-                <Button
-                  variant="outline-secondary"
-                  size="sm"
-                  onClick={handleLogout}
-                  className="ms-2"
+                <NavDropdown 
+                  title={
+                    <span>
+                      <i className="fas fa-user me-1"></i>
+                      {user.displayName || 'Profile'}
+                    </span>
+                  } 
+                  id="user-dropdown"
+                  className="user-dropdown"
                 >
-                  <i className="fas fa-sign-out-alt me-1"></i>
-                  Logout
-                </Button>
+                  <NavDropdown.Item as={Link} to="/profile">
+                    <i className="fas fa-user me-2"></i>Profile
+                  </NavDropdown.Item>
+                  <NavDropdown.Item as={Link} to="/my-posts">
+                    <i className="fas fa-file-alt me-2"></i>My Posts
+                  </NavDropdown.Item>
+                  <NavDropdown.Divider />
+                  <NavDropdown.Item onClick={handleLogout}>
+                    <i className="fas fa-sign-out-alt me-2"></i>Logout
+                  </NavDropdown.Item>
+                </NavDropdown>
               </>
             ) : (
-              <>
-                <Nav.Link as={Link} to="/login">
+              <div className="auth-buttons">
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  className="me-2 login-btn"
+                  onClick={() => navigate('/login')}
+                >
                   <i className="fas fa-sign-in-alt me-1"></i>
                   Login
-                </Nav.Link>
+                </Button>
                 <Button
                   variant="primary"
                   size="sm"
-                  className="ms-2"
+                  className="signup-btn"
                   onClick={() => navigate('/register')}
                 >
                   <i className="fas fa-user-plus me-1"></i>
                   Sign Up
                 </Button>
-              </>
+              </div>
             )}
           </Nav>
         </BSNavbar.Collapse>

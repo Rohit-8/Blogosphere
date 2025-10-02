@@ -141,10 +141,16 @@ router.post('/', verifyToken, async (req, res) => {
   try {
     const db = getDB();
     const postsCollection = getBlogospherePostsCollection(db);
-    const { title, content, excerpt, tags, published = false } = req.body;
+    const { title, content, excerpt, tags, category = 'technology', published = false, imageUrl } = req.body;
     
     if (!title || !content) {
       return res.status(400).json({ error: 'Title and content are required' });
+    }
+    
+    // Validate category
+    const validCategories = ['daily-news', 'stock-market', 'ai', 'technology', 'business'];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({ error: 'Invalid category' });
     }
     
     const now = new Date();
@@ -153,13 +159,15 @@ router.post('/', verifyToken, async (req, res) => {
       content,
       excerpt: excerpt ? excerpt.trim() : content.substring(0, 150) + '...',
       tags: Array.isArray(tags) ? tags : [],
+      category,
       published: Boolean(published),
       authorId: req.user.uid,
       authorName: req.user.name || req.user.email?.split('@')[0] || 'Anonymous',
       createdAt: now,
       updatedAt: now,
       views: 0,
-      likes: 0
+      likes: 0,
+      ...(imageUrl && { imageUrl })
     };
     
     const docRef = await postsCollection.add(postData);
@@ -189,7 +197,7 @@ router.put('/:postId', verifyToken, async (req, res) => {
     const db = getDB();
     const postsCollection = getBlogospherePostsCollection(db);
     const { postId } = req.params;
-    const { title, content, excerpt, tags, published } = req.body;
+    const { title, content, excerpt, tags, category, published, imageUrl } = req.body;
     
     const doc = await postsCollection.doc(postId).get();
     
@@ -213,6 +221,16 @@ router.put('/:postId', verifyToken, async (req, res) => {
     if (excerpt !== undefined) updateData.excerpt = excerpt.trim();
     if (tags !== undefined) updateData.tags = Array.isArray(tags) ? tags : [];
     if (published !== undefined) updateData.published = Boolean(published);
+    if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
+    
+    // Validate and update category
+    if (category !== undefined) {
+      const validCategories = ['daily-news', 'stock-market', 'ai', 'technology', 'business'];
+      if (!validCategories.includes(category)) {
+        return res.status(400).json({ error: 'Invalid category' });
+      }
+      updateData.category = category;
+    }
     
     await postsCollection.doc(postId).update(updateData);
     
