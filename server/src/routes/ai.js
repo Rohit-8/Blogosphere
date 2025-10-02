@@ -11,10 +11,13 @@ const openai = new OpenAI({
   baseURL: 'https://integrate.api.nvidia.com/v1',
 });
 
-// Rate limiter: 1 request per second for all users combined
+// Rate limiter for AI routes - configurable via environment variables
+const AI_RATE_LIMIT_WINDOW_MS = parseInt(process.env.AI_RATE_LIMIT_WINDOW_MS) || 1000; // default 1 second
+const AI_RATE_LIMIT_MAX = parseInt(process.env.AI_RATE_LIMIT_MAX) || 1; // default 1 request per window
+
 const aiRateLimiter = rateLimit({
-  windowMs: 1000, // 1 second
-  max: 1, // 1 request per second for all users
+  windowMs: AI_RATE_LIMIT_WINDOW_MS,
+  max: AI_RATE_LIMIT_MAX,
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: false,

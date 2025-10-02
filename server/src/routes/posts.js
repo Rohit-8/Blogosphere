@@ -199,13 +199,8 @@ router.get('/:postId', optionalAuth, async (req, res) => {
       return res.status(403).json({ error: 'Post not accessible' });
     }
     
-    // Increment view count
-    await postsCollection.doc(postId).update({
-      views: (post.views || 0) + 1
-    });
-    
-    post.views = (post.views || 0) + 1;
-    
+    // NOTE: view counting is handled by a dedicated endpoint to avoid double-counting and allow
+    // throttling/deduplication. Clients should call POST /posts/:postId/view when a user views a post.
     res.json(post);
   } catch (error) {
     console.error('Get post error:', error);
@@ -383,6 +378,63 @@ router.delete('/:postId', authenticateToken, async (req, res) => {
     }
     
     res.status(500).json({ error: 'Failed to delete post' });
+  }
+});
+
+// Record a view for a post with basic deduplication logic
+// This endpoint should be called by the client when a user opens a post.
+router.post('/:postId/view', optionalAuth, async (req, res) => {
+  try {
+    const db = getDB();
+    const postsCollection = getBlogospherePostsCollection(db);
+    const { postId } = req.params;
+
+    const docRef = postsCollection.doc(postId);
+    const doc = await docRef.get();
+    if (!doc.exists) return res.status(404).json({ error: 'Post not found' });
+
+    const post = doc.data();
+
+    // Determine visitor identifier: use user id if logged in, otherwise use IP address
+    const visitorId = req.user ? `user:${req.user.id}` : `ip:${req.ip}`;
+
+    // We'll keep a lightweight "recentViews" map on the post that stores visitorId => timestamp
+    // to dedupe repeated rapid refreshes. This keeps the write small but is not intended as a
+    // long-term analytics store. For production use, a separate analytics DB is recommended.
+    const now = Date.now();
+    const dedupeWindowMs = parseInt(process.env.VIEW_DEDUPE_WINDOW_MS) || 60 * 1000; // default 1 minute
+
+    const recentViews = post.recentViews || {};
+    const lastSeen = recentViews[visitorId];
+
+    if (lastSeen && now - lastSeen < dedupeWindowMs) {
+      // Already seen recently - do not increment
+      return res.json({ success: true, message: 'View already counted recently' });
+    }
+
+    // Update recentViews (cleanup old entries)
+    const cutoff = now - (parseInt(process.env.VIEW_RETENTION_MS) || 24 * 60 * 60 * 1000); // default 24h
+    const newRecentViews = {};
+    for (const [k, ts] of Object.entries(recentViews)) {
+      if (ts > cutoff) newRecentViews[k] = ts;
+    }
+    newRecentViews[visitorId] = now;
+
+    // Increment views atomically using transaction to avoid race conditions
+    await db.runTransaction(async (t) => {
+      const snapshot = await t.get(docRef);
+      const current = snapshot.data();
+      const currentViews = current.views || 0;
+      t.update(docRef, {
+        views: currentViews + 1,
+        recentViews: newRecentViews
+      });
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Record view error:', error);
+    res.status(500).json({ error: 'Failed to record view' });
   }
 });
 

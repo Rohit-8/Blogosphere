@@ -45,6 +45,32 @@ const PostDetailPage: React.FC = () => {
     };
 
     fetchPost();
+    
+    // Record view with client-side dedupe
+    const recordViewForPost = async () => {
+      try {
+        // sessionStorage key to avoid multiple counts per session per post
+        const sessionKey = `viewed_post_${id}`;
+        const lastSeenStr = sessionStorage.getItem(sessionKey);
+        const now = Date.now();
+        const dedupeMs = parseInt(process.env.REACT_APP_VIEW_DEDUPE_MS || '60000'); // 60s default
+
+        if (lastSeenStr) {
+          const lastSeen = parseInt(lastSeenStr);
+          if (now - lastSeen < dedupeMs) {
+            return; // recently recorded in this session
+          }
+        }
+
+        await postsService.recordView(id);
+        sessionStorage.setItem(sessionKey, now.toString());
+      } catch (err) {
+        // don't block rendering if view cannot be recorded
+        console.warn('Failed to record view:', err);
+      }
+    };
+
+    recordViewForPost();
   }, [id, navigate]);
 
   const handleLike = async () => {

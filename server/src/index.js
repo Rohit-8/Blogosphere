@@ -17,9 +17,12 @@ const PORT = process.env.PORT || 5000;
 initializeFirebase();
 
 // Rate limiting
+const GLOBAL_RATE_LIMIT_WINDOW_MS = parseInt(process.env.GLOBAL_RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000; // default 15 minutes
+const GLOBAL_RATE_LIMIT_MAX = parseInt(process.env.GLOBAL_RATE_LIMIT_MAX) || 100;
+
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: GLOBAL_RATE_LIMIT_WINDOW_MS,
+  max: GLOBAL_RATE_LIMIT_MAX,
   message: 'Too many requests from this IP, please try again later.'
 });
 
@@ -90,5 +93,6 @@ app.use('*', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Blogosphere server is running on port ${PORT}`);
-  console.log(`📍 Health check: http://localhost:${PORT}/health`);
+  const host = process.env.CLIENT_URL || `http://localhost:${PORT}`;
+  console.log(`📍 Health check: ${host.replace(/\/$/, '')}/health`);
 });

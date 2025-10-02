@@ -1,6 +1,6 @@
 // Custom authentication service - no Firebase Auth dependency
 class AuthService {
-  private baseURL = 'http://localhost:5000/api';
+  private baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
   private tokenKey = 'blogosphere_token';
   private userKey = 'blogosphere_user';
 

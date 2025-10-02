@@ -67,4 +67,10 @@ export const postsService = {
     const response = await api.post(`/posts/${postId}/like`);
     return response.data;
   }
+  ,
+  // Record a view for a post
+  recordView: async (postId: string): Promise<{ success: boolean }> => {
+    const response = await api.post(`/posts/${postId}/view`);
+    return response.data;
+  }
 };
