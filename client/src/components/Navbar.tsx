@@ -2,9 +2,11 @@ import React from 'react';
 import { Navbar as BSNavbar, Nav, Container, Button } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
+  const { isDarkMode, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -17,7 +19,7 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <BSNavbar bg="white" expand="lg" className="shadow-sm">
+    <BSNavbar expand="lg" className="shadow-sm navbar">
       <Container>
         <BSNavbar.Brand as={Link} to="/" className="fw-bold text-primary">
           <i className="fas fa-blog me-2"></i>
@@ -40,7 +42,25 @@ const Navbar: React.FC = () => {
             )}
           </Nav>
           
-          <Nav className="ms-auto">
+          <Nav className="ms-auto d-flex align-items-center">
+            {/* Theme Toggle Button */}
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              onClick={toggleTheme}
+              className="theme-toggle me-2"
+              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {isDarkMode ? (
+                <i className="fas fa-sun"></i>
+              ) : (
+                <i className="fas fa-moon"></i>
+              )}
+              <span className="d-none d-md-inline ms-1">
+                {isDarkMode ? 'Light' : 'Dark'}
+              </span>
+            </Button>
+
             {user ? (
               <>
                 <Nav.Link as={Link} to="/profile">

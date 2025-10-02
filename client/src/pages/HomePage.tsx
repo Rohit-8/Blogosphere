@@ -119,7 +119,7 @@ const HomePage: React.FC = () => {
                       <Card.Title className="h5 mb-3">
                         <Link 
                           to={`/post/${post.id}`} 
-                          className="text-decoration-none text-dark"
+                          className="text-decoration-none"
                         >
                           {post.title}
                         </Link>

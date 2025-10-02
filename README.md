@@ -10,6 +10,7 @@ A modern full-stack blog application built with React, Node.js, and Firebase.
 - **Real-time Updates** - Live data synchronization with Firebase
 - **Responsive Design** - Works perfectly on all devices
 - **User Profiles** - Personalized user experience
+- **Dark/Light Theme** - Toggle between dark and light modes with system preference detection
 
 ## 🛠 Technology Stack
 
@@ -102,6 +103,24 @@ blogosphere/
 - `npm start` - Start React development server
 - `npm run build` - Build for production
 - `npm test` - Run tests
+
+## 🎨 Theme System
+
+Blogosphere includes a comprehensive dark/light theme system:
+
+### Features:
+- **Auto Detection** - Respects your system's theme preference
+- **Manual Toggle** - Switch themes using the navbar button
+- **Persistent Storage** - Remembers your theme choice
+- **Smooth Transitions** - All components smoothly transition between themes
+- **Complete Coverage** - Every component supports both themes
+
+### Theme Components:
+- Navbar with theme toggle button
+- All cards and modals
+- Form inputs and buttons
+- Code blocks and content areas
+- Sidebars and navigation elements
 
 ## 🔥 Firebase Configuration
 

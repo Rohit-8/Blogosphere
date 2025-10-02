@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
@@ -14,25 +15,27 @@ import './App.css';
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="App">
-          <Navbar />
-          <main className="container-fluid px-0">
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/create" element={<CreatePostPage />} />
-              <Route path="/post/:id" element={<PostDetailPage />} />
-              <Route path="/edit/:id" element={<EditPostPage />} />
-              <Route path="/profile/:userId" element={<ProfilePage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-            </Routes>
-          </main>
-        </div>
-      </Router>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Router>
+          <div className="App">
+            <Navbar />
+            <main className="container-fluid px-0">
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/create" element={<CreatePostPage />} />
+                <Route path="/post/:id" element={<PostDetailPage />} />
+                <Route path="/edit/:id" element={<EditPostPage />} />
+                <Route path="/profile/:userId" element={<ProfilePage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+              </Routes>
+            </main>
+          </div>
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   );
 };
 
