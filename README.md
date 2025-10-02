@@ -11,6 +11,10 @@ A modern full-stack blog application built with React, Node.js, and Firebase.
 - **Responsive Design** - Works perfectly on all devices
 - **User Profiles** - Personalized user experience
 - **Dark/Light Theme** - Toggle between dark and light modes with system preference detection
+- **Collapsible Category Sidebar** - Easy navigation with expandable/collapsible sidebar
+- **Advanced Search** - Search posts by title, content, tags, author, and category
+- **Category Filtering** - Filter posts by specific categories
+- **Reusable Components** - Modular architecture for easy maintenance
 
 ## 🛠 Technology Stack
 
@@ -34,6 +38,10 @@ blogosphere/
 │   ├── public/
 │   ├── src/
 │   │   ├── components/     # Reusable UI components
+│   │   │   ├── Navbar.tsx
+│   │   │   ├── PostCard.tsx
+│   │   │   ├── CategorySidebar.tsx  # Collapsible category navigation
+│   │   │   └── SearchBar.tsx        # Reusable search component
 │   │   ├── pages/          # Application pages
 │   │   ├── services/       # API services
 │   │   ├── context/        # React context providers
@@ -46,6 +54,7 @@ blogosphere/
 │   │   └── config/         # Configuration files
 │   ├── .env                # Environment variables
 │   └── package.json
+├── IMPLEMENTATION_SUMMARY.md  # Detailed implementation notes
 └── README.md
 ```
 
@@ -93,7 +102,28 @@ blogosphere/
 - **Backend API:** http://localhost:5000
 - **Health Check:** http://localhost:5000/health
 
-## 🔧 Available Scripts
+## � Additional Documentation
+
+- **IMPLEMENTATION_SUMMARY.md** - Detailed implementation notes and changes
+- **COMPONENT_USAGE.tsx** - Component usage examples and patterns
+
+## 🔧 Adding New Categories
+
+Adding a new category is simple - edit just one file:
+
+1. Open `client/src/components/Navbar.tsx`
+2. Add your category to the `CATEGORIES` array:
+   ```typescript
+   export const CATEGORIES = [
+     // ... existing categories
+     { id: 'your-category', name: 'Your Category', icon: 'fas fa-icon' }
+   ];
+   ```
+3. That's it! The sidebar, dropdowns, and filters update automatically.
+
+See Font Awesome icons: https://fontawesome.com/icons
+
+## �🔧 Available Scripts
 
 ### Backend (server/)
 - `npm start` - Start the Express server
